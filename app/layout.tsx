@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import Nav from "../components/Nav/Nav";
 import { AuthProvider } from "../lib/auth/authProvider";
 
 export const metadata: Metadata = {
@@ -14,8 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          <Nav />
-          <main id="main-content" className="main-container">{children}</main>
+          {children}
         </AuthProvider>
       </body>
     </html>

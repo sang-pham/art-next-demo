@@ -26,12 +26,10 @@ export default function LoginClient() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     // Demo behavior: set a cookie and navigate (replace with real login if desired)
-    setCookie("token", "your_jwt_token", { maxAge: 60 * 60 * 24, path: "/" });
-    router.push("/");
+    // setCookie("token", "your_jwt_token", { maxAge: 60 * 60 * 24, path: "/" });
+    // router.push("/");
     // If you want to use real login flow, uncomment below:
-    /*
-    setSubmitting(true);
-    setError(null);
+    
     try {
       if (isInvalid) {
         setSubmitting(false);
@@ -49,7 +47,7 @@ export default function LoginClient() {
     } finally {
       setSubmitting(false);
     }
-    */
+    
   }
 
   return (

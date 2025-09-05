@@ -19,6 +19,7 @@ function RegisterPageInner() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ email: false, password: false });
 
   const fieldErrors = useMemo(() => {
     const errs: Record<string, string> = {};
@@ -35,6 +36,7 @@ function RegisterPageInner() {
     setError(null);
     try {
       if (isInvalid) {
+        setTouched({ email: true, password: true });
         setSubmitting(false);
         return;
       }
@@ -97,11 +99,12 @@ function RegisterPageInner() {
                   suppressHydrationWarning
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                   required
                   placeholder="you@example.com"
-                  aria-invalid={!!fieldErrors.email}
+                  aria-invalid={touched.email ? !!fieldErrors.email : undefined}
                 />
-                {fieldErrors.email ? (
+                {touched.email && fieldErrors.email ? (
                   <div role="alert" className="text-red-600 mt-1">
                     {fieldErrors.email}
                   </div>
@@ -120,11 +123,12 @@ function RegisterPageInner() {
                   suppressHydrationWarning
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                   required
                   placeholder="At least 8 characters"
-                  aria-invalid={!!fieldErrors.password}
+                  aria-invalid={touched.password ? !!fieldErrors.password : undefined}
                 />
-                {fieldErrors.password ? (
+                {touched.password && fieldErrors.password ? (
                   <div role="alert" className="text-red-600 mt-1">
                     {fieldErrors.password}
                   </div>

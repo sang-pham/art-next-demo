@@ -8,7 +8,7 @@ import { clearAccessToken, getAccessToken, setAccessToken, subscribe } from "./t
 type AuthContextValue = {
   accessToken: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   register: (payload: { email: string; password: string; name?: string }) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -41,12 +41,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string) => {
     const client = createBrowserClient();
-    const resp = await client.post<{ accessToken?: string; user?: any }>("/auth/login", {
-      email,
-      password,
-    });
+    const resp = await client.post<{ accessToken?: string; user?: any }>(
+      "/auth/login",
+      {
+        identifier,
+        password,
+      }
+    );
     const at = resp.data?.accessToken ?? null;
     setAccessToken(at);
     setToken(at);

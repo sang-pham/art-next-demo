@@ -16,7 +16,19 @@ async function loadUser(): Promise<User | null> {
   const hdrs = await headers();
   const userAgent = hdrs.get("user-agent") ?? "";
 
-  const url = `${process.env.NEXT_PUBLIC_APP_ORIGIN ?? ""}/api/auth/me` || "/api/auth/me";
+  // Build absolute URL for server-side fetch to avoid "Failed to parse URL" with relative paths
+  const xfHost = hdrs.get("x-forwarded-host") ?? null;
+  const host = xfHost || hdrs.get("host");
+  const proto = hdrs.get("x-forwarded-proto") ?? "http";
+  const envOrigin = process.env.NEXT_PUBLIC_APP_ORIGIN?.trim();
+  const origin =
+    envOrigin && envOrigin.length > 0
+      ? envOrigin
+      : host
+        ? `${proto}://${host}`
+        : "http://localhost:3000";
+  const url = new URL("/api/auth/me", origin).toString();
+
   const res = await fetch(url, {
     method: "GET",
     cache: "no-store",
@@ -38,33 +50,32 @@ export default async function ProfilePage() {
   if (!user) {
     // Should be protected by middleware, but handle gracefully
     return (
-      <section style={{ maxWidth: 680, margin: "2rem auto", padding: "1rem" }}>
-        <h1>Profile</h1>
-        <p>Not authenticated.</p>
+      <section className="narrow">
+        <div className="card">
+          <h1>Profile</h1>
+          <div className="alert alert-error mt-2" role="alert">
+            Not authenticated.
+          </div>
+        </div>
       </section>
     );
   }
 
   return (
-    <section style={{ maxWidth: 680, margin: "2rem auto", padding: "1rem" }}>
-      <h1>Profile</h1>
-      <div
-        style={{
-          border: "1px solid #e5e7eb",
-          borderRadius: 8,
-          padding: "1rem",
-          marginTop: "1rem",
-        }}
-      >
-        <p>
-          <strong>ID:</strong> {String(user.id ?? "—")}
-        </p>
-        <p>
-          <strong>Email:</strong> {String(user.email ?? "—")}
-        </p>
-        <p>
-          <strong>Name:</strong> {String(user.name ?? "—")}
-        </p>
+    <section className="narrow">
+      <div className="card">
+        <h1>Profile</h1>
+        <div className="grid gap-2 mt-3">
+          <p>
+            <strong>ID:</strong> {String(user.id ?? "—")}
+          </p>
+          <p>
+            <strong>Email:</strong> {String(user.email ?? "—")}
+          </p>
+          <p>
+            <strong>Name:</strong> {String(user.name ?? "—")}
+          </p>
+        </div>
       </div>
     </section>
   );

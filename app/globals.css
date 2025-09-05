@@ -1,33 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  
+  --container: 1100px;
+  --radius: 12px;
+  
+  --color-bg: #ffffff;
+  --color-fg: #0f172a;
+  --color-muted-foreground: #475569;
+  --color-card: #ffffff;
+  --color-card-border: #e5e7eb;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #60a5fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-bg: #0b1220;
+    --color-fg: #e5e7eb;
+    --color-muted-foreground: #94a3b8;
+    --color-card: #0f172a;
+    --color-card-border: #1f2937;
+    --color-primary: #60a5fa;
+    --color-primary-foreground: #0b1220;
+    --color-ring: #93c5fd;
+  }
+}
+
 :root {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu,
-    Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji",
-    "Segoe UI Emoji";
+  /* Typography */
+  --font-sans: var(--font-family-sans);
+
+  /* Layout */
+  --container: 1100px;
+  --radius: 12px;
+
+  /* Colors - Light Mode (Default) */
+  --bg: #ffffff;
+  --fg: #0f172a;
+  --muted-foreground: #475569;
+  --card: #ffffff;
+  --card-border: #e5e7eb;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --ring: #60a5fa;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+/* Dark mode removed - using light mode only */
 
-html,
-body {
+/* Base reset */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
   padding: 0;
   margin: 0;
+  min-height: 100%;
+  color-scheme: light;
   font-family: var(--font-sans);
-  line-height: 1.5;
-  color: #111;
-  background: #fff;
+  line-height: 1.6;
+  color: var(--fg);
+  background:
+    radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb, var(--primary) 8%, transparent), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Typography */
+h1, h2, h3 {
+  line-height: 1.2;
+  margin: 0 0 0.5rem 0;
+}
+h1 { font-size: clamp(2rem, 2.6vw + 1.6rem, 2.5rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 1.5vw + 1rem, 2rem); }
+p  { margin: 0.25rem 0 0.75rem; color: var(--muted-foreground); }
+
+/* Links */
 a {
-  color: inherit;
+  color: var(--primary);
   text-decoration: none;
+  text-underline-offset: 3px;
 }
+a:hover { text-decoration: underline; }
 
-main {
-  max-width: 960px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+/* Tailwind component classes */
+@layer components {
+  /* Main container */
+  .main-container {
+    @apply max-w-6xl mx-auto my-8 px-4;
+  }
+
+  /* Utilities */
+  .container {
+    @apply max-w-6xl mx-auto px-4;
+  }
+  
+  .section {
+    @apply my-8;
+  }
+  
+  .narrow {
+    @apply max-w-lg mx-auto my-8 px-4;
+  }
+  
+  .muted {
+    @apply text-slate-600;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm;
+  }
+
+  /* Forms */
+  .form {
+    @apply grid gap-4;
+  }
+  
+  .label {
+    @apply block font-semibold text-slate-900 mb-1.5;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2.5 border border-gray-300 rounded-md bg-white text-slate-900 outline-none transition-all duration-150 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-md border border-gray-300 bg-white text-slate-900 cursor-pointer no-underline transition-all duration-150 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 border-blue-600 text-white hover:bg-blue-700 shadow-sm;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent border-transparent text-slate-700 hover:bg-gray-100 shadow-none;
+  }
+
+  /* Alerts */
+  .alert {
+    @apply rounded-md px-3 py-2.5 border border-gray-200;
+  }
+  
+  .alert-error {
+    @apply text-red-700 bg-red-50 border-red-200;
+  }
 }

@@ -25,21 +25,38 @@ export async function GET(req: NextRequest) {
       }
 
       const refreshResp = await backend().post("/v1/auth/refresh", {
+        // Support multiple backend schemas
         refreshToken: rt,
         refresh_token: rt,
+        token: rt,
+        rt,
       });
 
       const { data: refreshData, error: refreshErr } = unwrapEnvelope<any>(
         refreshResp.data
       );
-      if (refreshErr) {
+      // Treat error as real only if it carries meaningful fields
+      if (refreshErr && (refreshErr.message || refreshErr.code !== undefined)) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-      const tokens = normalizeTokens(refreshData ?? refreshResp.data);
+      // Normalize tokens from top-level and nested { tokens: {...} }
+      const topTokens = normalizeTokens(refreshData ?? refreshResp.data);
+      const nestedTokens =
+        refreshData &&
+        typeof refreshData === "object" &&
+        "tokens" in (refreshData as any)
+          ? normalizeTokens((refreshData as any).tokens)
+          : {};
+      const tokens = { ...topTokens, ...nestedTokens };
       accessToken =
         tokens.accessToken ??
-        (refreshData?.token as string | undefined) ??
+        ((refreshData as any)?.token as string | undefined) ??
         null;
+
+      // If still no access token, we cannot proceed
+      if (!accessToken) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      }
 
       // Prepare to rotate RT cookie if backend returned a new one
       const newRt =
@@ -48,16 +65,7 @@ export async function GET(req: NextRequest) {
         (refreshData?.rt as string | undefined) ??
         null;
 
-      const tmpRes = NextResponse.next();
-
-      if (newRt) {
-        setRefreshCookie(tmpRes, newRt);
-      }
-
-      // Merge cookies from tmpRes into our final response later
-      // by copying its cookie headers to the final response we create below.
-      // We'll store them here to reuse.
-      const setCookieHeaders = tmpRes.headers.getSetCookie();
+      // We'll set the refresh cookie on the final response (if any) below.
 
       // Now fetch user with the new access token
       const meResp = await backend().get("/v1/auth/me", {
@@ -66,11 +74,20 @@ export async function GET(req: NextRequest) {
       const { data: userData, error: userErr } = unwrapEnvelope<any>(
         meResp.data
       );
-      if (userErr) {
+      if (userErr && (userErr.message || userErr.code !== undefined)) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-      const res = NextResponse.json(userData ?? meResp.data, { status: 200 });
-      for (const sc of setCookieHeaders) res.headers.append("Set-Cookie", sc);
+      const userOut =
+        (userData && (userData as any).user) ??
+        (userData && (userData as any).profile) ??
+        userData ??
+        (meResp.data as any)?.user ??
+        (meResp.data as any)?.profile ??
+        meResp.data;
+      const res = NextResponse.json(userOut, { status: 200 });
+      if (newRt) {
+        setRefreshCookie(res, newRt);
+      }
       return res;
     }
 
@@ -79,10 +96,17 @@ export async function GET(req: NextRequest) {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const { data, error } = unwrapEnvelope<any>(meResp.data);
-    if (error) {
+    if (error && (error.message || error.code !== undefined)) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.json(data ?? meResp.data, { status: 200 });
+    const userOut =
+      (data && (data as any).user) ??
+      (data && (data as any).profile) ??
+      data ??
+      (meResp.data as any)?.user ??
+      (meResp.data as any)?.profile ??
+      meResp.data;
+    return NextResponse.json(userOut, { status: 200 });
   } catch (err: any) {
     const status = err?.response?.status ?? 500;
     const payload = err?.response?.data ?? {

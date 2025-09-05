@@ -1,33 +1,26 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth/authProvider";
 
-function isEmail(s: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-}
-
-export default function LoginPage() {
+function LoginPageInner() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/profile";
   const { login } = useAuth();
 
-  const [email, setEmail] = useState("");
+  // Identifier can be username or email
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fieldErrors = useMemo(() => {
-    const errs: Record<string, string> = {};
-    if (!isEmail(email)) errs.email = "Enter a valid email address";
-    if (password.length < 1) errs.password = "Password is required";
-    return errs;
-  }, [email, password]);
-
-  const isInvalid = useMemo(() => Object.keys(fieldErrors).length > 0, [fieldErrors]);
+  const isInvalid = useMemo(
+    () => identifier.trim().length === 0 || password.trim().length === 0,
+    [identifier, password]
+  );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,7 +31,7 @@ export default function LoginPage() {
         setSubmitting(false);
         return;
       }
-      await login(email, password);
+      await login(identifier, password);
       router.push(next);
       router.refresh();
     } catch (err: any) {
@@ -53,63 +46,85 @@ export default function LoginPage() {
   }
 
   return (
-    <section style={{ maxWidth: 420, margin: "2rem auto", padding: "1rem" }}>
-      <h1>Login</h1>
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: "0.75rem" }} noValidate>
-        <label>
-          <div>Email</div>
-          <input
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@example.com"
-            aria-invalid={!!fieldErrors.email}
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
-          {fieldErrors.email ? (
-            <div role="alert" style={{ color: "crimson" }}>{fieldErrors.email}</div>
-          ) : null}
-        </label>
-        <label>
-          <div>Password</div>
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="••••••••"
-            aria-invalid={!!fieldErrors.password}
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
-          {fieldErrors.password ? (
-            <div role="alert" style={{ color: "crimson" }}>{fieldErrors.password}</div>
-          ) : null}
-        </label>
+    <section className="narrow">
+      <div className="card">
+        <h1>Login</h1>
+
         {error ? (
-          <div role="alert" style={{ color: "crimson" }}>
+          <div role="alert" className="alert alert-error mt-2">
             {error}
           </div>
         ) : null}
-        <button
-          type="submit"
-          disabled={submitting || isInvalid}
-          style={{
-            padding: "0.5rem 0.75rem",
-            cursor: submitting || isInvalid ? "not-allowed" : "pointer",
-            opacity: submitting || isInvalid ? 0.7 : 1,
-          }}
-          aria-disabled={submitting || isInvalid}
-        >
-          {submitting ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
-      <p style={{ marginTop: "0.75rem" }}>
-        Don't have an account?{" "}
-        <Link href={`/register?next=${encodeURIComponent(next)}`}>Register</Link>
-      </p>
+
+        <form onSubmit={onSubmit} className="form" noValidate>
+          <div>
+            <label className="label" htmlFor="identifier">
+              Email or username
+            </label>
+            <input
+              id="identifier"
+              className="input"
+              type="text"
+              autoComplete="username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              required
+              placeholder="you@example.com or yourusername"
+              aria-invalid={false}
+            />
+          </div>
+
+          <div>
+            <label className="label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              className="input"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+              aria-invalid={false}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={submitting || isInvalid}
+            aria-disabled={submitting || isInvalid}
+          >
+            {submitting ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+
+        <p className="muted mt-2">
+          Don&apos;t have an account?{" "}
+          <Link className="btn btn-ghost" href={`/register?next=${encodeURIComponent(next)}`}>
+            Register
+          </Link>
+        </p>
+      </div>
     </section>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="narrow">
+          <div className="card">
+            <h1>Login</h1>
+            <p className="muted">Loading...</p>
+          </div>
+        </section>
+      }
+    >
+      <LoginPageInner />
+    </Suspense>
   );
 }

@@ -39,15 +39,15 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
         <nav className="hidden sm:block">
           <ul className="flex items-center gap-4 list-none m-0 p-0">
-            {/* <li>
+            <li>
               <Link
                 className={linkClass("/")}
                 aria-current={pathname === "/" ? "page" : undefined}
                 href="/"
               >
-                Home
+                Dashboard
               </Link>
-            </li> */}
+            </li>
             
             <li>
               <Link
@@ -74,6 +74,15 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 href="/logs"
               >
                 Logs
+              </Link>
+            </li>
+            <li>
+              <Link
+                className={linkClass("/ai")}
+                aria-current={pathname === "/ai" ? "page" : undefined}
+                href="/ai"
+              >
+                AI
               </Link>
             </li>
           </ul>

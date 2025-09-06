@@ -74,6 +74,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export function useToast() {
   const ctx = React.useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within ToastProvider");
-  return ctx;
+  if (ctx) return ctx;
+  // Fallback no-op implementation to avoid runtime crashes if a component
+  // calls useToast outside of <ToastProvider>. This preserves UX and logs a warning.
+  return {
+    show: ({ title, description, variant, duration }: any) => {
+      if (typeof window !== "undefined" && (console as any)?.warn) {
+        try {
+          console.warn(
+            "useToast called outside ToastProvider; showing no-op toast:",
+            { title, description, variant, duration }
+          );
+        } catch {}
+      }
+      return "";
+    },
+    dismiss: () => {},
+    clear: () => {},
+  };
 }

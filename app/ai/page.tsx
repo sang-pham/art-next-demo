@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import { createBrowserClient } from "../../lib/http/client";
 import { useToast } from "../../components/feedback/ToastProvider";
+import Table from "../../components/data/Table";
 
 type AnyRec = Record<string, any>;
 
@@ -79,9 +80,53 @@ export default function AnalysisPage() {
     }
   }
 
+  // Normalize various possible API response shapes into table rows
+  function toArrayRows(data: any): AnyRec[] {
+    if (Array.isArray(data)) {
+      return data.map((item) => (item && typeof item === "object" ? item : { value: item }));
+    }
+    if (data && typeof data === "object") {
+      const candidates = [
+        (data as any).rows,
+        (data as any).records,
+        (data as any).data,
+        (data as any).items,
+        (data as any).result,
+        (data as any).results,
+        (data as any).suggestions,
+      ];
+      for (const arr of candidates) {
+        if (Array.isArray(arr)) {
+          return arr.map((item) => (item && typeof item === "object" ? item : { value: item }));
+        }
+      }
+      return [data];
+    }
+    return data != null ? [{ value: data }] : [];
+  }
+
+  // Build table columns from row keys (limited to first 20 keys for readability)
+  function toColumns(rows: AnyRec[]) {
+    const keySet = new Set<string>();
+    rows.forEach((r) => {
+      if (r && typeof r === "object") {
+        Object.keys(r).forEach((k) => keySet.add(k));
+      }
+    });
+    const keys = Array.from(keySet).slice(0, 20);
+    return keys.map((key) => ({
+      key,
+      header: key,
+      sortable: true,
+    }));
+  }
+
+  const rows = useMemo(() => toArrayRows(result), [result]);
+  const columns = useMemo(() => toColumns(rows), [rows]);
+
   return (
     <Layout>
-      <section className="narrow">
+      <section className="mx-auto my-8 px-4 w-[90vw] max-w-none">
         <div className="card">
           <h1 className="m-0">Analysis</h1>
           <p className="muted mt-1">
@@ -122,10 +167,17 @@ export default function AnalysisPage() {
 
             {result ? (
               <div className="grid gap-3">
-                <div className="rounded-md border border-gray-200 bg-white p-3">
-                  <h3 className="text-base font-semibold m-0 mb-2">Raw response</h3>
-                  <pre className="text-xs whitespace-pre-wrap m-0">{pretty(result)}</pre>
-                </div>
+                {rows.length > 0 && columns.length > 0 ? (
+                  <div className="rounded-md border border-gray-200 bg-white p-3">
+                    <h3 className="text-base font-semibold m-0 mb-3">Analysis result</h3>
+                    <Table columns={columns as any} data={rows} />
+                  </div>
+                ) : null}
+
+                <details className="rounded-md border border-gray-200 bg-white p-3">
+                  <summary className="text-base font-semibold cursor-pointer">Raw response</summary>
+                  <pre className="text-xs whitespace-pre-wrap m-0 mt-2">{pretty(result)}</pre>
+                </details>
               </div>
             ) : null}
           </div>

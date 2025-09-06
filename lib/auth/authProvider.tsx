@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createBrowserClient } from "../http/client";
 import { clearAccessToken, getAccessToken, setAccessToken, subscribe } from "./tokenStore";
+import { getCookie, deleteCookie } from "cookies-next";
 
 type AuthContextValue = {
   accessToken: string | null;
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [token, setToken] = useState<string | null>(getAccessToken());
 
   // Sync local state with token store changes
@@ -74,6 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await client.post("/auth/logout");
     } finally {
+      // Ensure demo login cookie is cleared so middleware treats user as logged-out
+      try { deleteCookie("token", { path: "/" }); } catch {}
       clearAccessToken();
       setToken(null);
       router.push("/login");
@@ -84,12 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       accessToken: token,
-      isAuthenticated: !!token,
+      // Re-evaluate cookie-based auth on route changes to keep header/middleware in sync
+      isAuthenticated: !!token || !!getCookie("token"),
       login,
       register,
       logout,
     }),
-    [token, login, register, logout]
+    // include pathname so navigation (e.g. /login -> /) refreshes cookie-derived auth state
+    [token, login, register, logout, pathname]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

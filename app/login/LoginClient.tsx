@@ -1,15 +1,15 @@
 "use client";
 
-import React, { FormEvent, useMemo, useState, Suspense } from "react";
+import React, { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth/authProvider";
 import { setCookie } from "cookies-next";
 
-function LoginPageInner() {
+export default function LoginClient() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/";
+  const next = search.get("next") || "/profile";
   const { login } = useAuth();
 
   // Identifier can be username or email
@@ -26,12 +26,10 @@ function LoginPageInner() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     // Demo behavior: set a cookie and navigate (replace with real login if desired)
-    setCookie("token", "your_jwt_token", { maxAge: 60 * 60 * 24, path: "/" });
-    router.push("/");
+    // setCookie("token", "your_jwt_token", { maxAge: 60 * 60 * 24, path: "/" });
+    // router.push("/");
     // If you want to use real login flow, uncomment below:
-    /*
-    setSubmitting(true);
-    setError(null);
+    
     try {
       if (isInvalid) {
         setSubmitting(false);
@@ -49,26 +47,23 @@ function LoginPageInner() {
     } finally {
       setSubmitting(false);
     }
-    */
+    
   }
 
   return (
-    <section className="min-h-screen grid lg:grid-cols-2 bg-white" suppressHydrationWarning>
+    <section className="min-h-screen grid lg:grid-cols-2">
       {/* Left: Background image (hidden on small screens) */}
       <div className="relative hidden lg:block">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url(/assets/banner.png)",
+            backgroundImage: "url(/assets/banner.png)",
           }}
           aria-hidden
         />
         {/* <div className="absolute inset-0 bg-black/30" aria-hidden /> */}
         <div className="relative z-10 h-full w-full flex items-end p-8">
-          <div className="text-white max-w-lg">
-            
-          </div>
+          <div className="text-white max-w-lg"></div>
         </div>
       </div>
 
@@ -76,10 +71,7 @@ function LoginPageInner() {
       <div className="flex items-center justify-center py-10 px-6">
         <div className="w-full max-w-md">
           <div className="card">
-            <div className="mb-3 flex items-center gap-2">
-              <img src="/assets/logo.png" alt="Logo" className="h-15 w-15" />
-              <h1 className="m-0">Đăng nhập</h1>
-            </div>
+            <h1>Login</h1>
 
             {error ? (
               <div role="alert" className="alert alert-error mt-2">
@@ -136,10 +128,7 @@ function LoginPageInner() {
 
             <p className="muted mt-2">
               Don't have an account?{" "}
-              <Link
-                className="btn btn-ghost"
-                href={`/register?next=${encodeURIComponent(next)}`}
-              >
+              <Link className="btn btn-ghost" href={`/register?next=${encodeURIComponent(next)}`}>
                 Register
               </Link>
             </p>
@@ -147,29 +136,5 @@ function LoginPageInner() {
         </div>
       </div>
     </section>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <section className="min-h-screen grid lg:grid-cols-2">
-          <div className="relative hidden lg:block">
-            <div className="absolute inset-0 bg-slate-200 animate-pulse" />
-          </div>
-          <div className="flex items-center justify-center py-10 px-6">
-            <div className="w-full max-w-md">
-              <div className="card">
-                <h1>Login</h1>
-                <p className="muted">Loading...</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      }
-    >
-      <LoginPageInner />
-    </Suspense>
   );
 }

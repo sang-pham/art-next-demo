@@ -1,4 +1,5 @@
 import { cookies, headers } from "next/headers";
+import Layout from "../../components/layout/Layout";
 
 type User = {
   id?: string | number;
@@ -47,36 +48,35 @@ async function loadUser(): Promise<User | null> {
 export default async function ProfilePage() {
   const user = await loadUser();
 
-  if (!user) {
-    // Should be protected by middleware, but handle gracefully
-    return (
-      <section className="narrow">
-        <div className="card">
-          <h1>Profile</h1>
-          <div className="alert alert-error mt-2" role="alert">
-            Not authenticated.
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section className="narrow">
-      <div className="card">
-        <h1>Profile</h1>
-        <div className="grid gap-2 mt-3">
-          <p>
-            <strong>ID:</strong> {String(user.id ?? "—")}
-          </p>
-          <p>
-            <strong>Email:</strong> {String(user.email ?? "—")}
-          </p>
-          <p>
-            <strong>Name:</strong> {String(user.name ?? "—")}
-          </p>
-        </div>
-      </div>
-    </section>
+    <Layout>
+      {!user ? (
+        <section className="narrow">
+          <div className="card">
+            <h1>Profile</h1>
+            <div className="alert alert-error mt-2" role="alert">
+              Not authenticated.
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="narrow">
+          <div className="card">
+            <h1>Profile</h1>
+            <div className="grid gap-2 mt-3">
+              <p>
+                <strong>ID:</strong> {String(user.id ?? "—")}
+              </p>
+              <p>
+                <strong>Email:</strong> {String(user.email ?? "—")}
+              </p>
+              <p>
+                <strong>Name:</strong> {String(user.name ?? "—")}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+    </Layout>
   );
 }

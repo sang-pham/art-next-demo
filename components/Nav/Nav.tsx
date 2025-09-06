@@ -22,7 +22,7 @@ export default function Nav() {
       <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
         <div className="font-bold tracking-tight">
           <Link href="/" className="text-white no-underline">
-            art-next-demo
+           
           </Link>
         </div>
         <nav aria-label="Main navigation">

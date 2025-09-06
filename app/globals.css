@@ -38,7 +38,7 @@
   --radius: 12px;
 
   /* Colors - Light Mode (Default) */
-  --bg: #ffffff;
+  --bg: #e5e7eb;
   --fg: #0f172a;
   --muted-foreground: #475569;
   --card: #ffffff;
@@ -60,9 +60,7 @@ html, body {
   font-family: var(--font-sans);
   line-height: 1.6;
   color: var(--fg);
-  background:
-    radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb, var(--primary) 8%, transparent), transparent 60%),
-    var(--bg);
+  background-color: var(--bg);
   background-attachment: fixed;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -73,6 +71,23 @@ html, body {
 h1, h2, h3 {
   line-height: 1.2;
   margin: 0 0 0.5rem 0;
+/* Wrapper fallback: if a page uses the Layout wrapper with class "app-bg",
+   apply the background image here as well (login/register don't use Layout). */
+.app-bg {
+  background-image: url("/assets/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+/* Background image applied to all pages except auth pages (controlled by BackgroundController) */
+body.bg-app-image {
+  background-image: url("/assets/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
 }
 h1 { font-size: clamp(2rem, 2.6vw + 1.6rem, 2.5rem); letter-spacing: -0.02em; }
 h2 { font-size: clamp(1.5rem, 1.5vw + 1rem, 2rem); }

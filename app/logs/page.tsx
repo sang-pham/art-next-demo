@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import Table, { type Column } from "../../components/data/Table";
 import { createBrowserClient } from "../../lib/http/client";
 import { useAuth } from "../../lib/auth/authProvider";
+import Modal from "../../components/overlay/Modal";
 
 type SqlLog = Record<string, any>;
 
@@ -45,6 +46,8 @@ export default function LogsPage() {
   const [selectedDb, setSelectedDb] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { accessToken } = useAuth();
 
   async function load() {
@@ -104,7 +107,11 @@ export default function LogsPage() {
           throw new Error(msg || "Upload failed");
         }
       });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       setFile(null);
+      setSuccessOpen(true);
       await load();
     } catch (e: any) {
       setError(String(e?.message || "Upload failed"));
@@ -228,6 +235,7 @@ export default function LogsPage() {
               </select>
 
               <input
+                ref={fileInputRef}
                 className="input"
                 type="file"
                 accept=".log,.txt,.json,application/json,text/plain"
@@ -277,6 +285,16 @@ export default function LogsPage() {
           </div>
         </div>
       </section>
+      <Modal
+        isOpen={successOpen}
+        title="Upload successful"
+        onClose={() => setSuccessOpen(false)}
+        onConfirm={() => setSuccessOpen(false)}
+        confirmText="OK"
+        cancelText="Close"
+      >
+        <p className="m-0">Your log file has been uploaded successfully.</p>
+      </Modal>
     </Layout>
   );
 }

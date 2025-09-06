@@ -93,9 +93,6 @@ export default function ProfilePage() {
               <p>
                 <strong>Email:</strong> {String(user.email ?? "—")}
               </p>
-              <p>
-                <strong>Name:</strong> {String(user.name ?? "—")}
-              </p>
             </div>
           )}
         </div>

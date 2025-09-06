@@ -35,6 +35,8 @@ export default function DashboardPage() {
   const [items, setItems] = useState<AnyRec[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -63,6 +65,66 @@ export default function DashboardPage() {
       setErr(String(msg));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function downloadCsv() {
+    setDownloadingCsv(true);
+    try {
+      const response = await client.get("http://localhost:8081/v1/sql-logs/report.csv", {
+        responseType: 'blob',
+      });
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `sql-logs-report-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      show({ title: "CSV report downloaded", variant: "success", duration: 2000 });
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Failed to download CSV report";
+      show({ title: String(msg), variant: "error", duration: 4000 });
+    } finally {
+      setDownloadingCsv(false);
+    }
+  }
+
+  async function downloadPdf() {
+    setDownloadingPdf(true);
+    try {
+      const response = await client.get("http://localhost:8081/v1/sql-logs/report.pdf", {
+        responseType: 'blob',
+      });
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `sql-logs-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      show({ title: "PDF report downloaded", variant: "success", duration: 2000 });
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Failed to download PDF report";
+      show({ title: String(msg), variant: "error", duration: 4000 });
+    } finally {
+      setDownloadingPdf(false);
     }
   }
 
@@ -96,7 +158,7 @@ export default function DashboardPage() {
     {
       key: "db",
       header: "Database",
-      accessor: (row) => pick(row, ["db", "database", "name"], "—") as any,
+      accessor: (row) => pick(row, ["db_name", "db", "database", "name"], "—") as any,
     },
     {
       key: "sql_query",
@@ -147,11 +209,25 @@ export default function DashboardPage() {
 
         <Card
           title="SQL Logs Scan"
-          description="Latest scan from /v1/sql-logs/scan (proxied via /api/sql-logs/scan)."
+          description=""
         >
           <div className="flex items-center justify-between mb-3">
             <p className="muted m-0">{loading ? "Scanning..." : "Showing results"}</p>
             <div className="inline-flex items-center gap-2">
+              <button
+                className="btn btn-secondary"
+                onClick={downloadCsv}
+                disabled={downloadingCsv || loading}
+              >
+                {downloadingCsv ? "Downloading..." : "Download CSV"}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={downloadPdf}
+                disabled={downloadingPdf || loading}
+              >
+                {downloadingPdf ? "Downloading..." : "Download PDF"}
+              </button>
               <button className="btn btn-primary" onClick={load} disabled={loading}>
                 {loading ? "Scanning..." : "Rescan"}
               </button>

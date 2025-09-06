@@ -48,25 +48,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 Dashboard
               </Link>
             </li>
-            
-            <li>
-              <Link
-                className={linkClass("/admin")}
-                aria-current={pathname === "/admin" ? "page" : undefined}
-                href="/admin"
-              >
-                Admin
-              </Link>
-            </li>
-            <li>
-              <Link
-                className={linkClass("/profile")}
-                aria-current={pathname === "/profile" ? "page" : undefined}
-                href="/profile"
-              >
-                Profile
-              </Link>
-            </li>
             <li>
               <Link
                 className={linkClass("/logs")}
@@ -85,17 +66,35 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 Analysis
               </Link>
             </li>
-            
-            </ul>
+            <li>
+              <Link
+                className={linkClass("/admin")}
+                aria-current={pathname === "/admin" ? "page" : undefined}
+                href="/admin"
+              >
+                Admin
+              </Link>
+            </li>
+            <li>
+              <Link
+                className={linkClass("/profile")}
+                aria-current={pathname === "/profile" ? "page" : undefined}
+                href="/profile"
+              >
+                Profile
+              </Link>
+            </li>
+
+          </ul>
         </nav>
 
         <div className="flex items-center gap-2">
           <button
-                onClick={async () => { await logout(); }}
-                className="inline-flex items-center justify-center h-9 px-3 rounded-md border border-gray-300 bg-white text-slate-900 hover:bg-gray-50"
-              >
-                Logout
-              </button>
+            onClick={async () => { await logout(); }}
+            className="inline-flex items-center justify-center h-9 px-3 rounded-md border border-gray-300 bg-white text-slate-900 hover:bg-gray-50"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>

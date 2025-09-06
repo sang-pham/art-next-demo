@@ -1,128 +1,116 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import { createBrowserClient } from "../../lib/http/client";
 import { useToast } from "../../components/feedback/ToastProvider";
 
-type AiAnalysis = Record<string, any>;
+type AnyRec = Record<string, any>;
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="grid gap-2">
-      <h3 className="text-base font-semibold m-0">{title}</h3>
-      <div className="rounded-md border border-gray-200 bg-white p-3">{children}</div>
-    </div>
-  );
-}
-
-export default function AiPage() {
+export default function AnalysisPage() {
   const client = useMemo(() => createBrowserClient(), []);
   const { show } = useToast();
 
-  const [text, setText] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  // Databases from /v1/sql-logs/databases
+  const [dbs, setDbs] = useState<string[]>([]);
+  const [selectedDb, setSelectedDb] = useState<string>("");
+
+  // Analysis result from /v1/ai-analysis
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<AnyRec | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AiAnalysis | null>(null);
+
+  useEffect(() => {
+    async function loadDatabases() {
+      try {
+        const res = await client.get("/sql-logs/databases");
+        const arr: any =
+          (Array.isArray(res.data) && res.data) ||
+          (Array.isArray(res.data?.data) && res.data.data) ||
+          (Array.isArray(res.data?.databases) && res.data.databases) ||
+          [];
+        const names = arr
+          .map((x: any) => (typeof x === "string" ? x : x?.name ?? x?.db ?? x?.db_name ?? ""))
+          .filter((s: string) => s && typeof s === "string");
+        setDbs(names);
+        if (!selectedDb && names.length > 0) setSelectedDb(names[0]);
+      } catch (e: any) {
+        const msg =
+          e?.response?.data?.error?.message ||
+          e?.response?.data?.message ||
+          e?.message ||
+          "Failed to load databases";
+        setError(String(msg));
+      }
+    }
+    loadDatabases();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function analyze() {
-    setLoading(true);
+    if (!selectedDb) return;
+    setAnalyzing(true);
     setError(null);
     setResult(null);
     try {
-      // Send both q and text to be compatible with backend param naming
-      const res = await client.get("/ai/analysis", {
-        params: {
-          q: text,
-          text,
-        },
+      // Per spec: call /v1/ai-analysis with db_name (proxied as /api/v1/ai-analysis)
+      const res = await client.get("/v1/ai-analysis", {
+        params: { db_name: selectedDb },
       });
-
-      const payload = res.data ?? {};
-      setResult(payload);
-      show({
-        title: "AI analysis completed",
-        variant: "success",
-        duration: 2500,
-      });
+      setResult(res.data ?? {});
+      show({ title: "Analysis completed", variant: "success", duration: 2500 });
     } catch (e: any) {
       const msg =
         e?.response?.data?.error?.message ||
         e?.response?.data?.message ||
         e?.message ||
-        "AI analysis failed";
+        "Analysis failed";
       setError(String(msg));
     } finally {
-      setLoading(false);
+      setAnalyzing(false);
     }
   }
 
-  const pretty = React.useMemo(() => {
-    if (!result) return "";
+  function pretty(data: any): string {
     try {
-      return JSON.stringify(result, null, 2);
+      return JSON.stringify(data ?? {}, null, 2);
     } catch {
-      return String(result);
+      return String(data);
     }
-  }, [result]);
-
-  // Attempt to surface common fields if the backend provides them
-  const summary =
-    (result as any)?.summary ||
-    (result as any)?.overview ||
-    (result as any)?.analysis ||
-    null;
-
-  const suggestions: string[] | undefined =
-    (Array.isArray((result as any)?.suggestions) && (result as any)?.suggestions) ||
-    (Array.isArray((result as any)?.recommendations) && (result as any)?.recommendations) ||
-    undefined;
-
-  const anomalies: Array<string | Record<string, any>> | undefined =
-    (Array.isArray((result as any)?.anomalies) && (result as any)?.anomalies) ||
-    (Array.isArray((result as any)?.issues) && (result as any)?.issues) ||
-    undefined;
+  }
 
   return (
     <Layout>
       <section className="narrow">
         <div className="card">
-          <h1 className="m-0">AI Analysis</h1>
+          <h1 className="m-0">Analysis</h1>
           <p className="muted mt-1">
-            Calls GET /v1/ai/analysis via our Next API proxy (/api/ai/analysis).
+            Select a database from /v1/sql-logs/databases and run analysis via /v1/ai-analysis.
           </p>
 
           <div className="grid gap-3 mt-4">
-            <label className="label" htmlFor="ai-input">
-              Input text
-            </label>
-            <textarea
-              id="ai-input"
-              className="input min-h-[140px]"
-              placeholder="Enter text to analyze"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                className="input"
+                aria-label="Select database"
+                value={selectedDb}
+                onChange={(e) => setSelectedDb(e.target.value)}
+              >
+                <option value="">{dbs.length ? "Select database…" : "Loading databases…"}</option>
+                {dbs.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
 
-            <div className="flex gap-2">
               <button
                 className="btn btn-primary"
                 onClick={analyze}
-                disabled={loading || text.trim().length === 0}
-                aria-busy={loading || undefined}
+                disabled={analyzing || !selectedDb}
+                aria-busy={analyzing || undefined}
               >
-                {loading ? "Analyzing..." : "Analyze"}
-              </button>
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  setText("");
-                  setResult(null);
-                  setError(null);
-                }}
-                disabled={loading}
-              >
-                Clear
+                {analyzing ? "Analyzing..." : "Analyze"}
               </button>
             </div>
 
@@ -133,44 +121,11 @@ export default function AiPage() {
             ) : null}
 
             {result ? (
-              <div className="grid gap-4">
-                {summary ? (
-                  <Section title="Summary">
-                    <div className="whitespace-pre-wrap text-sm">{String(summary)}</div>
-                  </Section>
-                ) : null}
-
-                {Array.isArray(suggestions) && suggestions.length > 0 ? (
-                  <Section title="Suggestions">
-                    <ul className="list-disc pl-5 m-0 text-sm">
-                      {suggestions.map((s, i) => (
-                        <li key={i}>{String(s)}</li>
-                      ))}
-                    </ul>
-                  </Section>
-                ) : null}
-
-                {Array.isArray(anomalies) && anomalies.length > 0 ? (
-                  <Section title="Anomalies">
-                    <div className="grid gap-2">
-                      {anomalies.map((a, i) => (
-                        <div key={i} className="text-sm">
-                          {typeof a === "string" ? (
-                            a
-                          ) : (
-                            <code className="block whitespace-pre-wrap">
-                              {JSON.stringify(a, null, 2)}
-                            </code>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </Section>
-                ) : null}
-
-                <Section title="Raw response">
-                  <pre className="text-xs whitespace-pre-wrap m-0">{pretty}</pre>
-                </Section>
+              <div className="grid gap-3">
+                <div className="rounded-md border border-gray-200 bg-white p-3">
+                  <h3 className="text-base font-semibold m-0 mb-2">Raw response</h3>
+                  <pre className="text-xs whitespace-pre-wrap m-0">{pretty(result)}</pre>
+                </div>
               </div>
             ) : null}
           </div>

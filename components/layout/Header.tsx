@@ -82,10 +82,11 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 aria-current={pathname === "/ai" ? "page" : undefined}
                 href="/ai"
               >
-                AI
+                Analysis
               </Link>
             </li>
-          </ul>
+            
+            </ul>
         </nav>
 
         <div className="flex items-center gap-2">

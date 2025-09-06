@@ -70,21 +70,12 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         </nav>
 
         <div className="flex items-center gap-2">
-          {!isAuthenticated ? (
-            <Link href="/login" className="no-underline">
-              <Button size="sm" variant="primary">Login</Button>
-            </Link>
-          ) : (
-            <>
-
-              <button
+          <button
                 onClick={async () => { await logout(); }}
                 className="inline-flex items-center justify-center h-9 px-3 rounded-md border border-gray-300 bg-white text-slate-900 hover:bg-gray-50"
               >
                 Logout
               </button>
-            </>
-          )}
         </div>
       </div>
     </header>

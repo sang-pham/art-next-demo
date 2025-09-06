@@ -103,39 +103,53 @@ export function install401RefreshInterceptor(instance: AxiosInstance) {
       const response = error.response;
       const originalConfig = (error.config || {}) as AxiosRequestConfig & {
         _retry?: boolean;
+        _skipRefresh?: boolean;
       };
 
-      if (response?.status === 401 && !originalConfig._retry) {
-        originalConfig._retry = true;
+      // Determine if this request should skip refresh logic (e.g., login failures)
+      const url = String(originalConfig.url || "");
+      const skipRefresh =
+        (originalConfig as any)._skipRefresh === true ||
+        /\/auth\/(login)/.test(url);
 
-        if (isRefreshing) {
-          // Queue the request until refresh resolves
-          return new Promise((resolve, reject) => {
-            pendingQueue.push({
-              resolve: (cfg) => resolve(instance.request(cfg)),
-              reject,
-              config: originalConfig,
-            });
-          });
+      if (response?.status === 401) {
+        // Never attempt refresh for login failures; bubble the error up to the caller
+        if (skipRefresh) {
+          return Promise.reject(error);
         }
 
-        try {
-          const newToken = await requestRefresh();
-          runQueue(null, newToken);
-          // Replay the original request with updated token header
-          originalConfig.headers = originalConfig.headers ?? {};
-          if (newToken) {
-            (originalConfig.headers as any)["Authorization"] =
-              `Bearer ${newToken}`;
-          } else {
-            if (originalConfig.headers) {
-              delete (originalConfig.headers as any)["Authorization"];
-            }
+        if (!originalConfig._retry) {
+          originalConfig._retry = true;
+
+          if (isRefreshing) {
+            // Queue the request until refresh resolves
+            return new Promise((resolve, reject) => {
+              pendingQueue.push({
+                resolve: (cfg) => resolve(instance.request(cfg)),
+                reject,
+                config: originalConfig,
+              });
+            });
           }
-          return instance.request(originalConfig);
-        } catch (refreshErr) {
-          runQueue(refreshErr, null);
-          return Promise.reject(refreshErr);
+
+          try {
+            const newToken = await requestRefresh();
+            runQueue(null, newToken);
+            // Replay the original request with updated token header
+            originalConfig.headers = originalConfig.headers ?? {};
+            if (newToken) {
+              (originalConfig.headers as any)["Authorization"] =
+                `Bearer ${newToken}`;
+            } else {
+              if (originalConfig.headers) {
+                delete (originalConfig.headers as any)["Authorization"];
+              }
+            }
+            return instance.request(originalConfig);
+          } catch (refreshErr) {
+            runQueue(refreshErr, null);
+            return Promise.reject(refreshErr);
+          }
         }
       }
 

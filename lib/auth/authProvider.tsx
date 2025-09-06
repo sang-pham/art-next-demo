@@ -10,7 +10,7 @@ type AuthContextValue = {
   accessToken: string | null;
   isAuthenticated: boolean;
   login: (identifier: string, password: string) => Promise<void>;
-  register: (payload: { email: string; password: string; name?: string }) => Promise<void>;
+  register: (payload: { email: string; password: string; name?: string; username?: string }) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -26,9 +26,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return subscribe((t) => setToken(t));
   }, []);
 
-  // On mount, if there is no token, try refresh once to bootstrap from cookie
+  // If there is no token, try refresh to bootstrap from cookie,
+  // but skip on the public auth pages to avoid extra calls during login/register.
   useEffect(() => {
-    if (!getAccessToken()) {
+    const publicAuth = pathname === "/login" || pathname === "/register";
+    if (!getAccessToken() && !publicAuth) {
       const client = createBrowserClient();
       client
         .post<{ accessToken: string }>("/auth/refresh")
@@ -41,16 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // ignore; unauthenticated state
         });
     }
-  }, []);
+  }, [pathname]);
 
   const login = useCallback(async (identifier: string, password: string) => {
     const client = createBrowserClient();
     const resp = await client.post<{ accessToken?: string; user?: any }>(
       "/auth/login",
-      {
-        identifier,
-        password,
-      }
+      { identifier, password },
+      ({ _skipRefresh: true } as any)
     );
     const at = resp.data?.accessToken ?? null;
     setAccessToken(at);
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (payload: { email: string; password: string; name?: string }) => {
+    async (payload: { email: string; password: string; name?: string; username?: string }) => {
       const client = createBrowserClient();
       const resp = await client.post<{ accessToken?: string; user?: any }>(
         "/auth/register",

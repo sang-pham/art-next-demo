@@ -4,12 +4,11 @@ import React, { FormEvent, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth/authProvider";
-import { setCookie } from "cookies-next";
 
 function LoginPageInner() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/";
+  const next = search.get("next") || "/profile";
   const { login } = useAuth();
 
   // Identifier can be username or email
@@ -25,11 +24,6 @@ function LoginPageInner() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    // Demo behavior: set a cookie and navigate (replace with real login if desired)
-    setCookie("token", "your_jwt_token", { maxAge: 60 * 60 * 24, path: "/" });
-    router.push("/");
-    // If you want to use real login flow, uncomment below:
-    /*
     setSubmitting(true);
     setError(null);
     try {
@@ -41,15 +35,19 @@ function LoginPageInner() {
       router.push(next);
       router.refresh();
     } catch (err: any) {
+      const status = err?.response?.status ?? 0;
+      const serverMsg =
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message;
       const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Login failed. Please check your credentials.";
+        serverMsg ||
+        (status === 401 || status === 400
+          ? "Invalid username/email or password."
+          : "Login failed. Please check your credentials.");
       setError(String(msg));
     } finally {
       setSubmitting(false);
     }
-    */
   }
 
   return (

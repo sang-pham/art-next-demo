@@ -9,24 +9,32 @@ function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
+function isUsername(s: string) {
+  // Letters, numbers, dot, underscore, hyphen; min length 3
+  return /^[a-zA-Z0-9._-]{3,}$/.test(s);
+}
+
 function RegisterPageInner() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/";
+  const next = search.get("next") || "/profile";
   const { register: registerUser } = useAuth();
 
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState({ email: false, password: false });
+  const [touched, setTouched] = useState({ username: false, email: false, password: false });
 
   const fieldErrors = useMemo(() => {
     const errs: Record<string, string> = {};
+    if (!isUsername(username))
+      errs.username = "Username must be at least 3 characters and contain only letters, numbers, . _ -";
     if (!isEmail(email)) errs.email = "Enter a valid email address";
     if (password.length < 8) errs.password = "Password must be at least 8 characters";
     return errs;
-  }, [email, password]);
+  }, [username, email, password]);
 
   const isInvalid = useMemo(() => Object.keys(fieldErrors).length > 0, [fieldErrors]);
 
@@ -36,18 +44,25 @@ function RegisterPageInner() {
     setError(null);
     try {
       if (isInvalid) {
-        setTouched({ email: true, password: true });
+        setTouched({ username: true, email: true, password: true });
         setSubmitting(false);
         return;
       }
-      await registerUser({ email, password });
+      await registerUser({ username, email, password });
       router.push(next);
       router.refresh();
     } catch (err: any) {
+      const status = err?.response?.status ?? 0;
+      const serverMsg =
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message;
       const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Registration failed. Please try again.";
+        serverMsg ||
+        (status === 409
+          ? "Email or username already exists."
+          : status === 400
+          ? "Invalid registration details."
+          : "Registration failed. Please try again.");
       setError(String(msg));
     } finally {
       setSubmitting(false);
@@ -87,6 +102,29 @@ function RegisterPageInner() {
             ) : null}
 
             <form onSubmit={onSubmit} className="form" noValidate suppressHydrationWarning>
+              <div>
+                <label className="label" htmlFor="username">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  className="input"
+                  type="text"
+                  autoComplete="username"
+                  suppressHydrationWarning
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+                  required
+                  placeholder="yourusername"
+                  aria-invalid={touched.username ? !!fieldErrors.username : undefined}
+                />
+                {touched.username && fieldErrors.username ? (
+                  <div role="alert" className="text-red-600 mt-1">
+                    {fieldErrors.username}
+                  </div>
+                ) : null}
+              </div>
               <div>
                 <label className="label" htmlFor="email">
                   Email

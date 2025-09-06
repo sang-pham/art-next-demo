@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import { useAuth } from "../../lib/auth/authProvider";
-import { getAccessToken } from "../../lib/auth/tokenStore";
+import { createBrowserClient } from "../../lib/http/client";
 
 type Role = "Admin" | "User";
 type Status = "Active" | "Inactive" | "Blocked" | "Pending" | string;
@@ -19,22 +19,9 @@ type AdminUser = {
   [k: string]: any;
 };
 
-const BACKEND =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.trim() || "http://localhost:8081";
-
-function useAuthHeader() {
-  const { accessToken } = useAuth();
-  const token = accessToken || getAccessToken();
-  return useMemo(() => {
-    if (!token) return {};
-    return {
-      Authorization: `Bearer ${token}`,
-    } as Record<string, string>;
-  }, [token]);
-}
-
 export default function AdminPage() {
-  const headers = useAuthHeader();
+  const { isAuthenticated } = useAuth();
+  const client = useMemo(() => createBrowserClient(), []);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +32,14 @@ export default function AdminPage() {
   const [cPassword, setCPassword] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const authorized = "Authorization" in headers;
+  const authorized = isAuthenticated;
+
+  const extractList = (data: any): AdminUser[] => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.users)) return data.users;
+    return [];
+    };
 
   const loadUsers = useCallback(async () => {
     if (!authorized) {
@@ -56,42 +50,21 @@ export default function AdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BACKEND}/v1/admin/users`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        credentials: "include",
-      });
-      if (!res.ok) {
-        let body: any = {};
-        try {
-          body = await res.json();
-        } catch {}
-        const msg =
-          body?.error?.message ||
-          body?.message ||
-          (res.status === 403
-            ? "Forbidden (admin only)."
-            : "Failed to load users.");
-        throw new Error(msg);
-      }
-      const data = await res.json();
-      // Attempt to unwrap models from various envelope shapes
-      const list: AdminUser[] =
-        (Array.isArray(data) && data) ||
-        (Array.isArray(data?.data) && data.data) ||
-        (Array.isArray(data?.users) && data.users) ||
-        [];
+      const res = await client.get("/admin/users");
+      const list = extractList(res.data);
       setUsers(list);
     } catch (e: any) {
-      setError(String(e?.message || "Failed to load users."));
+      const status = e?.response?.status;
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        (status === 403 ? "Forbidden (admin only)." : "Failed to load users.");
+      setError(String(msg));
       setUsers([]);
     } finally {
       setLoading(false);
     }
-  }, [authorized, headers]);
+  }, [authorized, client]);
 
   useEffect(() => {
     loadUsers();
@@ -108,34 +81,18 @@ export default function AdminPage() {
         email: cEmail,
         password: cPassword,
       };
-      const res = await fetch(`${BACKEND}/v1/admin/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        let body: any = {};
-        try {
-          body = await res.json();
-        } catch {}
-        const msg =
-          body?.error?.message ||
-          body?.message ||
-          (res.status === 409
-            ? "User already exists."
-            : "Failed to create user.");
-        throw new Error(msg);
-      }
+      await client.post("/admin/users", payload);
       setCEmail("");
       setCUsername("");
       setCPassword("");
       await loadUsers();
     } catch (e: any) {
-      setError(String(e?.message || "Failed to create user."));
+      const status = e?.response?.status;
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        (status === 409 ? "User already exists." : "Failed to create user.");
+      setError(String(msg));
     } finally {
       setCreating(false);
     }
@@ -146,26 +103,14 @@ export default function AdminPage() {
     if (!confirm("Delete this user?")) return;
     setError(null);
     try {
-      const res = await fetch(`${BACKEND}/v1/admin/users/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        credentials: "include",
-      });
-      if (!res.ok) {
-        let body: any = {};
-        try {
-          body = await res.json();
-        } catch {}
-        const msg =
-          body?.error?.message || body?.message || "Failed to delete user.";
-        throw new Error(msg);
-      }
+      await client.delete(`/admin/users/${id}`);
       await loadUsers();
     } catch (e: any) {
-      setError(String(e?.message || "Failed to delete user."));
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        "Failed to delete user.";
+      setError(String(msg));
     }
   }
 
@@ -176,28 +121,14 @@ export default function AdminPage() {
     const role = input.trim();
     setError(null);
     try {
-      const res = await fetch(`${BACKEND}/v1/admin/users/${id}/role`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        credentials: "include",
-        // Some backends expect { role }, others { newRole }
-        body: JSON.stringify({ role, newRole: role }),
-      });
-      if (!res.ok) {
-        let body: any = {};
-        try {
-          body = await res.json();
-        } catch {}
-        const msg =
-          body?.error?.message || body?.message || "Failed to update role.";
-        throw new Error(msg);
-      }
+      await client.put(`/admin/users/${id}/role`, { role, newRole: role });
       await loadUsers();
     } catch (e: any) {
-      setError(String(e?.message || "Failed to update role."));
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        "Failed to update role.";
+      setError(String(msg));
     }
   }
 
@@ -212,34 +143,18 @@ export default function AdminPage() {
 
     setError(null);
     try {
-      const res = await fetch(`${BACKEND}/v1/admin/users/${id}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        credentials: "include",
-        // Try common shapes
-        body: JSON.stringify({
-          active: nextActive,
-          status: nextActive ? "Active" : "Inactive",
-          enabled: nextActive,
-        }),
+      await client.put(`/admin/users/${id}/status`, {
+        active: nextActive,
+        status: nextActive ? "Active" : "Inactive",
+        enabled: nextActive,
       });
-      if (!res.ok) {
-        let body: any = {};
-        try {
-          body = await res.json();
-        } catch {}
-        const msg =
-          body?.error?.message ||
-          body?.message ||
-          "Failed to update status.";
-        throw new Error(msg);
-      }
       await loadUsers();
     } catch (e: any) {
-      setError(String(e?.message || "Failed to update status."));
+      const msg =
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        "Failed to update status.";
+      setError(String(msg));
     }
   }
 

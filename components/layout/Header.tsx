@@ -66,6 +66,15 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 Profile
               </Link>
             </li>
+            <li>
+              <Link
+                className={linkClass("/admin")}
+                aria-current={pathname === "/admin" ? "page" : undefined}
+                href="/admin"
+              >
+                Admin
+              </Link>
+            </li>
           </ul>
         </nav>
 

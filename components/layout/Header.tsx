@@ -91,7 +91,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={async () => { await logout(); }}
-            className="inline-flex items-center justify-center h-9 px-3 rounded-md border border-gray-300 bg-white text-slate-900 hover:bg-gray-50"
+            className="inline-flex items-center justify-center h-9 px-3 rounded-md border border-red-600 bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
           >
             Logout
           </button>

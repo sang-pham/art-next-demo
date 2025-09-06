@@ -7,7 +7,7 @@ type SortDir = "asc" | "desc";
 export type Column<T> = {
   key: keyof T | string;
   header: React.ReactNode;
-  accessor?: (row: T) => React.ReactNode;
+  accessor?: (row: T, rowIndex?: number) => React.ReactNode;
   sortable?: boolean;
   className?: string;
 };
@@ -20,6 +20,7 @@ export interface TableProps<T> {
   defaultPageSize?: number;
   pageSizeOptions?: number[];
   className?: string;
+  rowClassName?: (row: T, rowIndex: number) => string;
   emptyMessage?: string;
 }
 
@@ -52,6 +53,7 @@ export default function Table<T extends Record<string, any>>({
   defaultPageSize = 5,
   pageSizeOptions = [5, 10, 20],
   className,
+  rowClassName,
   emptyMessage = "No data available.",
 }: TableProps<T>) {
   const [sortKey, setSortKey] = React.useState<string | null>(initialSort?.key ?? null);
@@ -87,6 +89,9 @@ export default function Table<T extends Record<string, any>>({
     const end = start + pageSize;
     return sorted.slice(start, end);
   }, [sorted, pagination, clampedPage, pageSize]);
+
+  // Absolute start index for current view (used to style first N rows across all pages)
+  const pageStart = pagination ? (clampedPage - 1) * pageSize : 0;
 
   React.useEffect(() => {
     if (page > lastPage) setPage(lastPage);
@@ -146,24 +151,30 @@ export default function Table<T extends Record<string, any>>({
               </td>
             </tr>
           ) : (
-            paginated.map((row, idx) => (
-              <tr
-                key={idx}
-                className="border-b last:border-b-0 border-gray-100 hover:bg-gray-50/50 transition-colors"
-              >
-                {columns.map((col) => {
-                  const content =
-                    typeof col.accessor === "function"
-                      ? col.accessor(row)
-                      : (row as any)[col.key as any] as React.ReactNode;
-                  return (
-                    <td key={String(col.key)} className="px-3 py-2 text-slate-800">
-                      {content}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))
+            paginated.map((row, idx) => {
+              const absIdx = pageStart + idx;
+              return (
+                <tr
+                  key={absIdx}
+                  className={[
+                    "border-b last:border-b-0 border-gray-100 hover:bg-gray-50/50 transition-colors",
+                    rowClassName ? rowClassName(row, absIdx) : "",
+                  ].filter(Boolean).join(" ")}
+                >
+                  {columns.map((col) => {
+                    const content =
+                      typeof col.accessor === "function"
+                        ? col.accessor(row, absIdx)
+                        : (row as any)[col.key as any] as React.ReactNode;
+                    return (
+                      <td key={String(col.key)} className="px-3 py-2 text-slate-800">
+                        {content}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

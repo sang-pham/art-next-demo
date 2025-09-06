@@ -245,6 +245,7 @@ export default function DashboardPage() {
             data={items}
             pagination
             defaultPageSize={10}
+            rowClassName={(_row, idx) => (idx < 10 ? "text-red-600 font-bold" : "")}
             emptyMessage={loading ? "Loading..." : "No scan results"}
           />
         </Card>

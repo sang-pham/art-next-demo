@@ -58,6 +58,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <span>Profile</span>
                 </Link>
               </li>
+              <li>
+                <Link href="/admin" className={itemBase} onClick={onClose}>
+                  <span className="i-ph-shield-check-duotone" aria-hidden />
+                  <span>Admin</span>
+                </Link>
+              </li>
               {isAuthenticated ? (
                 <li>
                   <button

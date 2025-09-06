@@ -3,8 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createBrowserClient } from "../http/client";
-import { clearAccessToken, getAccessToken, setAccessToken, subscribe } from "./tokenStore";
-import { getCookie, deleteCookie } from "cookies-next";
+import { clearAccessToken, getAccessToken, setAccessToken, subscribe, hasAccessTokenInSession } from "./tokenStore";
 
 type AuthContextValue = {
   accessToken: string | null;
@@ -76,8 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await client.post("/auth/logout");
     } finally {
-      // Ensure demo login cookie is cleared so middleware treats user as logged-out
-      try { deleteCookie("token", { path: "/" }); } catch {}
       clearAccessToken();
       setToken(null);
       router.push("/login");
@@ -88,8 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       accessToken: token,
-      // Re-evaluate cookie-based auth on route changes to keep header/middleware in sync
-      isAuthenticated: !!token || !!getCookie("token"),
+      // Consider session-stored token presence for logged-in state
+      isAuthenticated: !!token || hasAccessTokenInSession(),
       login,
       register,
       logout,

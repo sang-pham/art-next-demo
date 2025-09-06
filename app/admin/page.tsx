@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "../../components/layout/Layout";
 import { useAuth } from "../../lib/auth/authProvider";
 import { createBrowserClient } from "../../lib/http/client";
+import Modal from "../../components/overlay/Modal";
 
 type Role = "Admin" | "User";
 type Status = "Active" | "Inactive" | "Blocked" | "Pending" | string;
@@ -31,6 +32,10 @@ export default function AdminPage() {
   const [cUsername, setCUsername] = useState("");
   const [cPassword, setCPassword] = useState("");
   const [creating, setCreating] = useState(false);
+  // Role dialog state
+  const [roleOpen, setRoleOpen] = useState(false);
+  const [roleTarget, setRoleTarget] = useState<AdminUser | null>(null);
+  const [roleValue, setRoleValue] = useState("");
 
   const authorized = isAuthenticated;
 
@@ -114,14 +119,26 @@ export default function AdminPage() {
     }
   }
 
-  async function updateRole(id: string | number) {
+  function openRoleDialog(user: AdminUser) {
     if (!authorized) return;
-    const input = prompt('Enter new role (e.g. "Admin" or "User"):');
-    if (!input) return;
-    const role = input.trim();
+    setRoleTarget(user);
+    setRoleValue(String(user.role ?? ""));
+    setRoleOpen(true);
+  }
+
+  function closeRoleDialog() {
+    setRoleOpen(false);
+  }
+
+  async function confirmRoleDialog() {
+    if (!authorized || !roleTarget) return;
+    const role = roleValue.trim();
+    if (!role) return;
     setError(null);
     try {
-      await client.put(`/admin/users/${id}/role`, { role, newRole: role });
+      await client.put(`/admin/users/${roleTarget.id}/role`, { role, newRole: role });
+      setRoleOpen(false);
+      setRoleTarget(null);
       await loadUsers();
     } catch (e: any) {
       const msg =
@@ -242,16 +259,16 @@ export default function AdminPage() {
                         <td className="p-2 border-b">{String(u.id)}</td>
                         <td className="p-2 border-b">{u.username ?? "—"}</td>
                         <td className="p-2 border-b">{u.email ?? "—"}</td>
-                        <td className="p-2 border-b">{u.name ?? "—"}</td>
+                        {/* <td className="p-2 border-b">{u.name ?? "—"}</td> */}
                         <td className="p-2 border-b">{u.role ?? "—"}</td>
-                        <td className="p-2 border-b">
+                        {/* <td className="p-2 border-b">
                           {isActive ? "Active" : u.status ?? "Inactive"}
-                        </td>
+                        </td> */}
                         <td className="p-2 border-b">
                           <div className="flex gap-2">
                             <button
-                              className="btn btn-danger"
-                              onClick={() => updateRole(u.id)}
+                              className="btn btn-primary text-white"
+                              onClick={() => openRoleDialog(u)}
                               disabled={!authorized}
                               title="Update Role"
                             >
@@ -284,6 +301,42 @@ export default function AdminPage() {
           </div>
         </div>
       </section>
+          <Modal
+            isOpen={roleOpen}
+            title="Update role"
+            onClose={closeRoleDialog}
+            onConfirm={confirmRoleDialog}
+            confirmText="Save"
+            disableConfirm={!roleValue.trim()}
+          >
+            <div className="grid gap-2">
+              <label className="label" htmlFor="role-input">New role</label>
+              <input
+                id="role-input"
+                className="input"
+                placeholder="Admin or User"
+                value={roleValue}
+                onChange={(e) => setRoleValue(e.target.value)}
+                autoComplete="off"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setRoleValue("Admin")}
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setRoleValue("User")}
+                >
+                  User
+                </button>
+              </div>
+            </div>
+          </Modal>
     </Layout>
   );
 }

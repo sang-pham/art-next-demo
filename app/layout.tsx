@@ -4,7 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "../lib/auth/authProvider";
 
 export const metadata: Metadata = {
-  title: "art-next-demo",
+  title: "Art-team",
   description: "Minimal Next.js 15 base project",
 };
 

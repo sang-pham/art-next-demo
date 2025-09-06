@@ -39,7 +39,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
         <nav className="hidden sm:block">
           <ul className="flex items-center gap-4 list-none m-0 p-0">
-            <li>
+            {/* <li>
               <Link
                 className={linkClass("/")}
                 aria-current={pathname === "/" ? "page" : undefined}
@@ -47,7 +47,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
               >
                 Home
               </Link>
-            </li>
+            </li> */}
             
             <li>
               <Link

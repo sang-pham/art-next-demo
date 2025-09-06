@@ -242,9 +242,9 @@ export default function AdminPage() {
                     <th className="text-left p-2 border-b">ID</th>
                     <th className="text-left p-2 border-b">Username</th>
                     <th className="text-left p-2 border-b">Email</th>
-                    <th className="text-left p-2 border-b">Name</th>
+                    {/* <th className="text-left p-2 border-b">Name</th> */}
                     <th className="text-left p-2 border-b">Role</th>
-                    <th className="text-left p-2 border-b">Status</th>
+                    {/* <th className="text-left p-2 border-b">Status</th> */}
                     <th className="text-left p-2 border-b">Actions</th>
                   </tr>
                 </thead>

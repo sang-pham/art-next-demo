@@ -48,13 +48,14 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 Home
               </Link>
             </li>
+            
             <li>
               <Link
-                className={linkClass("/about")}
-                aria-current={pathname === "/about" ? "page" : undefined}
-                href="/about"
+                className={linkClass("/admin")}
+                aria-current={pathname === "/admin" ? "page" : undefined}
+                href="/admin"
               >
-                About
+                Admin
               </Link>
             </li>
             <li>
@@ -64,15 +65,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                 href="/profile"
               >
                 Profile
-              </Link>
-            </li>
-            <li>
-              <Link
-                className={linkClass("/admin")}
-                aria-current={pathname === "/admin" ? "page" : undefined}
-                href="/admin"
-              >
-                Admin
               </Link>
             </li>
           </ul>

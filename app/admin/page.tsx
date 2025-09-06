@@ -250,14 +250,14 @@ export default function AdminPage() {
                         <td className="p-2 border-b">
                           <div className="flex gap-2">
                             <button
-                              className="btn btn-ghost"
+                              className="btn btn-danger"
                               onClick={() => updateRole(u.id)}
                               disabled={!authorized}
                               title="Update Role"
                             >
                               Role
                             </button>
-                            <button
+                            {/* <button
                               className="btn btn-ghost"
                               onClick={() => toggleStatus(u.id, u)}
                               disabled={!authorized}
@@ -272,7 +272,7 @@ export default function AdminPage() {
                               title="Delete User"
                             >
                               Delete
-                            </button>
+                            </button> */}
                           </div>
                         </td>
                       </tr>

@@ -85,7 +85,7 @@ export default function AnalysisPage() {
         <div className="card">
           <h1 className="m-0">Analysis</h1>
           <p className="muted mt-1">
-            Select a database from /v1/sql-logs/databases and run analysis via /v1/ai-analysis.
+            Select database and let Open AI help you analyze queries and make suggestions
           </p>
 
           <div className="grid gap-3 mt-4">
